@@ -1,0 +1,70 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="  
+     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd  
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd  
+     http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.0.xsd">
+	<bean id="datasource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@127.0.0.1:1521:ORCL" />
+		<property name="username" value="cyw" />
+		<property name="password" value="cyw2015" />
+	</bean>
+	
+	<security:http security="none" pattern="/login.jsp" />
+	<security:http auto-config='true' use-expressions="false">
+		<security:access-denied-handler
+			error-page="/accessDenied.jsp" />
+		<!-- <security:intercept-url pattern="/admin.jsp*"
+			access="ROLE_ADMIN" />
+			<security:intercept-url pattern="/hello.do*"
+			access="ROLE_USER,ROLE_ADMIN" />
+		<security:intercept-url pattern="/**"
+			access="ROLE_USER,ROLE_ADMIN" /> -->
+		<security:form-login login-page="/login.jsp"
+			username-parameter="username" password-parameter="password" />
+		<security:logout logout-success-url="/login.jsp" />
+		<security:csrf disabled="true" />
+		<!-- 会话管理配置 -->
+		<security:session-management
+			invalid-session-url="/sessionTimeout.html">
+			<security:concurrency-control
+				max-sessions="1" error-if-maximum-exceeded="true" /><!-- error-if-maximum-exceeded="true" 
+				防止第二次登录 -->
+		</security:session-management>
+		<security:custom-filter ref="myFilter" before="FILTER_SECURITY_INTERCEPTOR"/>
+	</security:http>
+	
+	<bean class="com.cyw.security.MyFilterSecurityInterceptor" id="myFilter">
+		<property name="authenticationManager" ref="authenticationManager"/>
+		<property name="accessDecisionManager" ref="myAccessDecisionManagerBean"/>
+		<property name="securityMetadataSource" ref="securityMetadataSource"/>
+	</bean>
+	
+	<!-- 配置认证管理 -->
+	<security:authentication-manager alias="authenticationManager">
+		<security:authentication-provider  user-service-ref="myUserDetailService">
+		 <security:password-encoder hash="md5"/>
+		</security:authentication-provider>
+	</security:authentication-manager>
+	
+	 <!--在这个类中，你就可以从数据库中读入用户的密码，角色信息，是否锁定，账号是否过期等 -->
+	<bean  class="com.cyw.security.MyUserDetailService" id="myUserDetailService" />
+	 <!--访问决策器，决定某个用户具有的角色，是否有足够的权限去访问某个资源 -->
+	<bean class="com.cyw.security.MyAccessDecisionManager" id="myAccessDecisionManagerBean" />
+	 <!--资源源数据定义，将所有的资源和权限对应关系建立起来，即定义某一资源可以被哪些角色访问 -->
+	 <bean class="com.cyw.security.MyInvocationSecurityMetadataSource" id="securityMetadataSource" />
+	 
+	<!-- 提示语 -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:message_zh_CN"></property>
+	</bean>	
+	
+	<!-- 启用annotation -->
+	<security:global-method-security
+		secured-annotations="enabled" jsr250-annotations="enabled" />
+		
+</beans>
