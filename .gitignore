@@ -9,6 +9,4 @@ buildNumber.properties
 .mvn/timing.properties
 .settings/
 .classpath
-.mymetadata
-.myumldata
 .project
